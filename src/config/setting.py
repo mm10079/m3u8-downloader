@@ -204,8 +204,8 @@ def get_config(config_type="default") -> dict:
 
 def get_base_config(config = {}) -> dict:
     '''取得基本設定'''
-    config["version"] = 'v2025.03.31-1.0.0.0'
-    config["opening_message"] = f'開始執行m3u8下載器(版本：{config["version"]})\n歡迎使用m3u8下載器，本下載器提供者為 @神椿市立圖書館，如有任何問題請私訊聯絡Discord:馬邦德(ID:foren_milden)。\n本下載器僅供學術研究使用，請勿用於任何商業用途，如有侵權請告知，將立即刪除。\n寫這下載器是真的累，花了好幾個月才完成，求拍拍。\n晚上只好回家找情緒討拍拍了。\n'
+    config["version"] = 'v2025.06.08-2.0.0.0'
+    config["opening_message"] = f'開始執行m3u8下載器(版本：{config["version"]})\n歡迎使用m3u8下載器，本下載器提供者為 馬邦德，有任何問題請到 https://github.com/mm10079/m3u8-downloader 聯繫。\n本下載器僅供學術研究使用，請勿用於任何商業用途，如有侵權請告知，將立即刪除。\n'
     return config
 
 def get_test_config(config = {}) -> dict:

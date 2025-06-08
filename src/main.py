@@ -5,11 +5,13 @@ import asyncio
 import logging
 import threading
 import importlib
+import pkgutil
 
 from src.utils import set_cookies, default_info
 from src.config import logger, setting
 from src.services import downloader, driver_tools, m3u8_downloader
 from src.app_types import common_types
+import src.web_modules
 
 log = logging.getLogger(__name__)
 
@@ -50,13 +52,10 @@ def web_graber(config: dict) -> common_types.Mission:
         download_info = None # type: ignore
         abandoned_m3u8s = set()
         models = []
-        models_folder = os.path.join(os.path.dirname(__file__), 'web_modules')
-        for file in os.listdir(os.path.join(os.path.dirname(__file__), models_folder)):
-            if file.endswith('.py') and not file.startswith('_') and file != 'nonspecific.py':
-                module_name = file[:-3]
-                module_path = 'src.web_modules.' + module_name
-                models.append(module_path)
-        models.append('src.web_modules.nonspecific')
+        for _, module_name, _ in pkgutil.iter_modules(src.web_modules.__path__):
+            if module_name != "nonspecific":
+                models.append(f"src.web_modules.{module_name}")
+        models.append("src.web_modules.nonspecific")
         while download_info is None:
             # 檢測網址是否為特定模塊，如有則執行對應模塊
             for model in models:
