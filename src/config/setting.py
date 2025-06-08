@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import sys
 
 type_map = {
     "str": str,
@@ -8,6 +9,17 @@ type_map = {
     "bool": lambda x: bool(int(x)) if isinstance(x, str) else bool(x),
     "list": lambda x: x.split(",")
 }
+
+def get_resource_path():
+    if os.name == "nt":
+        if getattr(sys, 'frozen', False):
+            # ✅ getattr 安全存取，避免靜態報錯
+            base_path = getattr(sys, '_MEIPASS', os.getcwd())
+        else:
+            base_path = os.getcwd()
+        return os.path.join(base_path, 'tools', 'ffmpeg.exe')
+    else:
+        return "ffmpeg"
 
 class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
     def add_argument(self, action):
@@ -52,7 +64,7 @@ class Params:
                 "type": "str",
                 "nargs": None,
                 "help": "合併用工具路徑",
-                "default": os.path.join(os.getcwd(), 'ffmpeg.exe') if os.name == 'nt' else 'ffmpeg'
+                "default": get_resource_path()
             },
             "decrypt": {
                 "type": "bool",
