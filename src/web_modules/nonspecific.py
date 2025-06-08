@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 def main(driver: webdriver.Chrome, config: dict, abandoned_m3u8s: set) -> common_types.Mission | None:
     # 沒有模塊則採用隨時檢測m3u8文件
     m3u8s = []
-    for m3u8_url in driver_tools.get_m3u8_link(driver, config["full_download"]):
+    for m3u8_url in driver_tools.get_m3u8_link(driver, abandoned_m3u8s):
         if m3u8_url in abandoned_m3u8s:
             continue
         log.info(f'找到m3u8文件：\"{m3u8_url}\"')
@@ -27,7 +27,7 @@ def main(driver: webdriver.Chrome, config: dict, abandoned_m3u8s: set) -> common
                 folder=title,
                 referer=driver.current_url,
                 user_agent=(config["user_agent"] or default_info.DEFAULT_USER_AGENT),
-                cookies=config["cookies_path"],
+                cookies=driver,
                 full_download=config["full_download"],
             )
             m3u8s.append(m3u8_info)

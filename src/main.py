@@ -53,7 +53,7 @@ def web_graber(config: dict) -> common_types.Mission:
         abandoned_m3u8s = set()
         models = []
         for _, module_name, _ in pkgutil.iter_modules(src.web_modules.__path__):
-            if module_name != "nonspecific":
+            if module_name != "nonspecific" and module_name != "__init__":
                 models.append(f"src.web_modules.{module_name}")
         models.append("src.web_modules.nonspecific")
         while download_info is None:
