@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+tests/
+*.pyc
+.vscode/
+.env
+dist/
+*.cmd
+*.txt
+*.exe
+twitter.py
+zaiko.py
+zan_live.py
