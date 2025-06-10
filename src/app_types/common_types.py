@@ -2,6 +2,8 @@ from typing import TypedDict, Union
 from selenium import webdriver
 from dataclasses import dataclass
 
+from src.app_types.m3u8_types import M3U8Info
+
 @dataclass
 class ZanLiveItem:
     driver: webdriver.Chrome
@@ -11,18 +13,18 @@ class PromotionalsPicture(TypedDict):
     banner: list[str]
     titlelogo: str
 
-@dataclass
-class M3U8Info:
-    order: int = 0
-    url: str = ""
-    filename: str = ""
-    folder: str = ""
-    referer: str = ""
-    user_agent: str | None = None
-    cookies: str | webdriver.Chrome | dict | None = None
-    full_download: bool = False
 
 CookieType = Union[str, webdriver.Chrome, dict, None]
+
+@dataclass
+class FormatText:
+    fill: int = 0
+    text: str = ""
+
+@dataclass
+class FormatInfo:
+    url: str = ""
+    fill: int = 0
 
 @dataclass
 class File:

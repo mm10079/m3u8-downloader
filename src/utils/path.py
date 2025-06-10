@@ -1,6 +1,10 @@
 import re
 import os
 
+def clear_file_name(file: str) -> str:
+    filename = file.split('?')[0]
+    return filename[:filename.rfind('.')]
+
 # Windows路徑檢測
 def sanitize_windows_path(input_string: str) -> str:
     input_string = input_string.replace('\t', ' ').replace('\n', ' ')

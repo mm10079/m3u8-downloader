@@ -2,6 +2,7 @@ from selenium import webdriver
 import requests
 import threading
 import time
+import json
 
 from src.app_types import common_types
 
@@ -50,25 +51,30 @@ class cookies_keepalive:
     def unlock(self):
         self.power = False
         
+def parse_string_to_dict(cookies_string: str) -> dict:
+    result = {}
+    for pair in cookies_string.split(';'):
+        if '=' in pair:
+            key, value = pair.split('=', 1)
+            result[key.strip()] = value.strip()
+    return result
 
-# 解析 Netscape HTTP Cookie File
-def parse_netscape_to_dict(cookie_file_path):
+def parse_netscape_to_dict(cookies_string: str) -> dict:
     cookies = []
-    with open(cookie_file_path, 'r') as file:
-        for line in file:
-            if line.startswith("#") or not line.strip():
-                continue
-            domain, flag, path, secure, expiration, name, value = line.strip().split('\t')
-            cookie = {
-                'domain': domain,
-                'name': name,
-                'value': value,
-                'path': path,
-                'secure': secure.lower() == 'true',
-                'expires': int(expiration) if expiration.isdigit() else None
-            }
-            cookies.append(cookie)
-    return cookies
+    for line in cookies_string.splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        domain, flag, path, secure, expiration, name, value = line.strip().split('\t')
+        cookie = {
+            'domain': domain,
+            'name': name,
+            'value': value,
+            'path': path,
+            'secure': secure.lower() == 'true',
+            'expires': int(expiration) if expiration.isdigit() else None
+        }
+        cookies.append(cookie)
+    return {cookie['name']: cookie['value'] for cookie in cookies}
 
 def load_cookies_to_dict(cookies: common_types.CookieType) -> dict|None:
     '''更新 cookies，如果為 WebDriver 則多次更新'''
@@ -76,10 +82,17 @@ def load_cookies_to_dict(cookies: common_types.CookieType) -> dict|None:
         result = {cookie['name']: cookie['value'] for cookie in cookies.get_cookies()}
     elif isinstance(cookies, str):# 取得本地檔案的 cookies
         try:
-            cookies_list = parse_netscape_to_dict(cookies)
-            result = {cookie['name']: cookie['value'] for cookie in cookies_list}
+            if '.txt' == cookies[-4:]:
+                with open(cookies, 'r', encoding='utf-8') as f:
+                    if 'Netscape' in f.read():
+                        result = parse_netscape_to_dict(f.read())
+                    else:
+                        result = parse_string_to_dict(f.read())
+            else:
+                result = parse_string_to_dict(cookies)
         except:
             result = None
+            
     elif isinstance(cookies, dict):
         result = cookies
     else:

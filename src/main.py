@@ -82,7 +82,8 @@ def download(config: dict, mission: common_types.Mission) -> None:
                 merge_lock= lock,
                 convert_tool= config["tool_path"],
                 output_path= output_path,
-                decrypt= config["decrypt"]
+                decrypt= config["decrypt"],
+                full_download=config["full_download"]
             )
             thread = ThreadPoolManager.executor.submit(dl_mission.main, name_length)
             log.info(f'開始下載m3u8文件：\"{m3u8_info.url}\"')
