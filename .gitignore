@@ -8,7 +8,8 @@ tests/
 dist/
 *.cmd
 *.txt
+!requirements.txt
 *.exe
-twitter.py
-zaiko.py
-zan_live.py
+!tools/ffmpeg.exe
+web_modules/
+!web_modules/nonspecific.py

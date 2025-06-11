@@ -1,0 +1,8 @@
+bs4
+aiohttp
+aiofiles
+requests
+selenium
+seleniumbase
+pycryptodome
+python-dateutil
