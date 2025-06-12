@@ -1,6 +1,7 @@
 __pycache__/
 downloads/
 .pytest_cache/
+data/
 tests/
 *.pyc
 .vscode/
@@ -10,6 +11,5 @@ dist/
 *.txt
 !requirements.txt
 *.exe
-!tools/ffmpeg.exe
 web_modules/
 !web_modules/nonspecific.py

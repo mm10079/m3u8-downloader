@@ -160,13 +160,14 @@ def convert_m3u8_to_media(m3u8_url, output_path, tool):
 ################################################################
 # 下載區塊
 class m3u8_downloader:
-    def __init__(self, m3u8_info: common_types.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False):
+    def __init__(self, stop_flag: threading.Event, m3u8_info: common_types.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False):
         self.m3u8_info = m3u8_info
         self.merge_lock = merge_lock
         self.convert_tool = convert_tool
         self.output_path = output_path
         self.decrypt = decrypt
         self.full_download = full_download
+        self.stop_flag = stop_flag
         
         self.key = None
         self.tasks: set[asyncio.Task] = set()
@@ -290,16 +291,20 @@ class m3u8_downloader:
             if not self.key:
                 self.m3u8_graber.update_master_playlist()
             m3u8_status = self.m3u8_graber.update_media_playlist()
-            end_number = self.get_last_file_number()
-            if end_number not in self.files_status.keys():
-                for file in self.m3u8_graber.media_playlist_info.files:
-                    task = self.loop.create_task(self.add_normal_download(self.m3u8_graber.media_patch_url + file.path))
-                    self.tasks.add(task)
-                    task.add_done_callback(lambda t: self.tasks.discard(t))
-                retries, faided_times = 0, 0
-            else:
-                retries += 1
-                #log.info(f"未監控到新的檔案")
+            if self.stop_flag.is_set() and retries < 10:
+                log.warning(f"收到停止訊號，等待當前下載任務完成。")
+                retries = 10
+            elif not self.stop_flag.is_set():
+                end_number = self.get_last_file_number()
+                if end_number not in self.files_status.keys():
+                    for file in self.m3u8_graber.media_playlist_info.files:
+                        task = self.loop.create_task(self.add_normal_download(self.m3u8_graber.media_patch_url + file.path))
+                        self.tasks.add(task)
+                        task.add_done_callback(lambda t: self.tasks.discard(t))
+                    retries, faided_times = 0, 0
+                else:
+                    retries += 1
+                    #log.info(f"未監控到新的檔案")
             if not m3u8_status:
                 faided_times += 1
                 if faided_times > 10:
@@ -345,18 +350,22 @@ class m3u8_downloader:
             #if not self.key:
             #    self.m3u8_graber.update_master_playlist()
             m3u8_status = self.m3u8_graber.update_media_playlist()
-            end_number = self.get_last_file_number()
-            if end_number not in self.files_status.keys():
-                for num in range(start_number, end_number+1):
-                    task = self.loop.create_task(self.add_format_download(num))
-                    self.tasks.add(task)
-                    task.add_done_callback(lambda t: self.tasks.discard(t))
-                log.info(f"添加下載範圍，序號：{start_number} - {end_number}，共 {end_number-now_amount+1}個檔案")
-                now_amount = end_number
-                retries, faided_times = 0, 0
-            else:
-                retries += 1
-                log.info(f"未監控到新的檔案")
+            if self.stop_flag.is_set() and retries < 10:
+                log.warning(f"收到停止訊號，等待當前下載任務完成。")
+                retries = 10
+            elif not self.stop_flag.is_set():
+                end_number = self.get_last_file_number()
+                if end_number not in self.files_status.keys():
+                    for num in range(start_number, end_number+1):
+                        task = self.loop.create_task(self.add_format_download(num))
+                        self.tasks.add(task)
+                        task.add_done_callback(lambda t: self.tasks.discard(t))
+                    log.info(f"添加下載範圍，序號：{start_number} - {end_number}，共 {end_number-now_amount+1}個檔案")
+                    now_amount = end_number
+                    retries, faided_times = 0, 0
+                else:
+                    retries += 1
+                    log.info(f"未監控到新的檔案")
             if not m3u8_status:
                 faided_times += 1
                 if faided_times > 10:

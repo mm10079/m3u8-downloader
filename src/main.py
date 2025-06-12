@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import signal
 import asyncio
 import logging
+import pkgutil
 import threading
 import importlib
-import pkgutil
+from concurrent.futures import ThreadPoolExecutor
 
 from src.utils import set_cookies, default_info
 from src.config import logger, setting
@@ -15,6 +17,13 @@ import src.web_modules
 
 log = logging.getLogger(__name__)
 
+stop_flag = threading.Event()
+
+def signal_handler(sig, frame):
+    log.warning("📴 收到 Ctrl+C 中斷訊號")
+    stop_flag.set()
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def web_graber(config: dict) -> common_types.Mission:
     # 初始化網頁解析器
@@ -70,27 +79,41 @@ def web_graber(config: dict) -> common_types.Mission:
 def download(config: dict, mission: common_types.Mission) -> None:
     # 下載m3u8文件
     if config["media"]:
-        ThreadPoolManager = downloader.ThreadPoolManager(config['threads_limit'])
-        lock = threading.Lock()
-        futures = []
-        name_length = max(len(m3u8_info.filename) for m3u8_info in mission.m3u8s)
-        for m3u8_info in mission.m3u8s:
-            m3u8_info.order = config["quantity"]
-            output_path = os.path.join(config['output_path'], m3u8_info.folder)
-            dl_mission = m3u8_downloader.m3u8_downloader(
-                m3u8_info= m3u8_info,
-                merge_lock= lock,
-                convert_tool= config["tool_path"],
-                output_path= output_path,
-                decrypt= config["decrypt"],
-                full_download=config["full_download"]
-            )
-            thread = ThreadPoolManager.executor.submit(dl_mission.main, name_length)
-            log.info(f'開始下載m3u8文件：\"{m3u8_info.url}\"')
-            futures.append(thread)
-
-        ThreadPoolManager.join(futures)
-        ThreadPoolManager.shutdown()
+        with ThreadPoolExecutor(max_workers=config['threads_limit']) as executor:
+            threadPool = []
+            lock = threading.Lock()
+            name_length = max(len(m3u8_info.filename) for m3u8_info in mission.m3u8s)
+            for m3u8_info in mission.m3u8s:
+                m3u8_info.order = config["quantity"]
+                output_path = os.path.join(config['output_path'], m3u8_info.folder)
+                dl_mission = m3u8_downloader.m3u8_downloader(
+                    m3u8_info= m3u8_info,
+                    merge_lock= lock,
+                    convert_tool= config["tool_path"],
+                    output_path= output_path,
+                    decrypt= config["decrypt"],
+                    full_download=config["full_download"],
+                    stop_flag=stop_flag
+                )
+                thread = executor.submit(dl_mission.main, name_length)
+                log.info(f'開始下載m3u8文件：\"{m3u8_info.url}\"')
+                threadPool.append(thread)
+            try:
+                while any(not t.done() for t in threadPool):
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                log.warning('🛑 捕捉到 Ctrl+C，設定 stop_flag，等待任務自行停止...')
+                # 不要立即取 result()，讓任務能優雅完成
+                stop_flag.set()
+                while any(not t.done() for t in threadPool):
+                    time.sleep(1)
+            finally:
+                # 確保所有 future 拋出的 exception 被處理掉，避免程式 hang 在這裡
+                for future in threadPool:
+                    try:
+                        future.result(timeout=1)
+                    except Exception as e:
+                        log.error(f'任務異常終止：{e}')
     if config["attachment"] and mission.attachments:
         source_cookies = mission.attachments.cookies
         cookies = set_cookies.load_cookies_to_dict(source_cookies)

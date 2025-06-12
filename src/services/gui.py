@@ -90,7 +90,7 @@ def show_config_interface(params):
     return config
 
 # 询问用户是否下载给定的链接
-def ask_download(link):
+def ask_download(link: str) -> bool:
     """
     弹出窗口，询问用户是否下载给定的链接。
     
@@ -101,7 +101,7 @@ def ask_download(link):
     root = tk.Tk()
     root.withdraw()  # 隐藏主窗口
     # 弹出消息框
-    response = messagebox.askyesno("M3U8 發見！", f"是否要下載此連結：\n{link}")
+    response = messagebox.askyesno("確認", f"是否要下載此連結：\n{link}")
     # 返回布尔值，True表示用户点击"是"，False表示用户点击"否"
     return response
 
