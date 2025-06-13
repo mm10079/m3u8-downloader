@@ -4,7 +4,7 @@ import threading
 import time
 import json
 
-from src.app_types import common_types
+from src.app_types import common
 
 class cookies_keepalive:
     def __init__(self, driver: webdriver.Chrome, cookies_path):
@@ -76,7 +76,7 @@ def parse_netscape_to_dict(cookies_string: str) -> dict:
         cookies.append(cookie)
     return {cookie['name']: cookie['value'] for cookie in cookies}
 
-def load_cookies_to_dict(cookies: common_types.CookieType) -> dict|None:
+def load_cookies_to_dict(cookies: common.CookieType) -> dict|None:
     '''更新 cookies，如果為 WebDriver 則多次更新'''
     if isinstance(cookies, webdriver.Chrome):# 取得 Selenium 的 cookies
         result = {cookie['name']: cookie['value'] for cookie in cookies.get_cookies()}
@@ -99,7 +99,7 @@ def load_cookies_to_dict(cookies: common_types.CookieType) -> dict|None:
         result = None
     return result
 
-def update_session(cookies: common_types.CookieType, session = None) -> requests.Session:
+def update_session(cookies: common.CookieType, session = None) -> requests.Session:
     if cookies:
         session = requests.Session()
         cookies_dict = load_cookies_to_dict(cookies)

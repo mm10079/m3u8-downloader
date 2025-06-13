@@ -2,7 +2,7 @@ from typing import TypedDict, Union
 from selenium import webdriver
 from dataclasses import dataclass
 
-from src.app_types.m3u8_types import M3U8Info
+from src.app_types.m3u8 import M3U8Info
 
 @dataclass
 class ZanLiveItem:

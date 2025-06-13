@@ -8,7 +8,7 @@ import threading
 import subprocess
 from selenium import webdriver
 
-from src.app_types import common_types
+from src.app_types import common
 from src.services import share, decrypt, downloader, m3u8_graber
 from src.config import logger
 from src.utils import set_cookies, default_info
@@ -27,7 +27,7 @@ def get_last_number(string: str) -> str|None:
         return last_number
     return None
 
-def get_format_text(filepath: str, replacement: str) -> common_types.FormatText:
+def get_format_text(filepath: str, replacement: str) -> common.FormatText:
     """ return (fill, format_string) """
     # 獲取最後一個數字組並進行替換，需要避免抓取到mp4之類的檔名
     filepath_info = filepath.split('?')[0].split('/')
@@ -35,7 +35,7 @@ def get_format_text(filepath: str, replacement: str) -> common_types.FormatText:
     ext = os.path.splitext(filename)[1]
     filename = filename[:filename.rfind(ext)]
     matches = get_last_number(filename)
-    result = common_types.FormatText()
+    result = common.FormatText()
     if matches is not None:
         replaced_string = re.sub(rf'{re.escape(matches)}(?=\D*$)', replacement, filename, count=1)
         format_path = '/'.join(filepath_info[:-1]) + f'/{replaced_string}{ext}'
@@ -108,12 +108,12 @@ class FindStartFile:
         raise ValueError("無法找到有效的檔案網址")
 
 # 取得格式化連結
-def get_format_file_url(base_url:str, first_file: str, second_file: str) -> common_types.FormatInfo:
+def get_format_file_url(base_url:str, first_file: str, second_file: str) -> common.FormatInfo:
     """
     base_url: 基本網址 配合前面m3u8的media_patch_url
     找出兩個檔案中參數不同的部分，替換成{num}
     """
-    result = common_types.FormatInfo()
+    result = common.FormatInfo()
     # 分離副檔名，副檔名包含數字導致錯誤替換
     file_format_info = get_format_text(first_file, '{num}')
     if not file_format_info.text:
@@ -139,7 +139,7 @@ def get_format_file_url(base_url:str, first_file: str, second_file: str) -> comm
         if format_url[-1] == '&':
             format_url = format_url[:-1]
     log.info(f'取得格式化連結：{format_url}')
-    return common_types.FormatInfo(url=format_url, fill=file_format_info.fill)
+    return common.FormatInfo(url=format_url, fill=file_format_info.fill)
 
 
 ################################################################
@@ -160,7 +160,7 @@ def convert_m3u8_to_media(m3u8_url, output_path, tool):
 ################################################################
 # 下載區塊
 class m3u8_downloader:
-    def __init__(self, stop_flag: threading.Event, m3u8_info: common_types.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False):
+    def __init__(self, stop_flag: threading.Event, m3u8_info: common.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False):
         self.m3u8_info = m3u8_info
         self.merge_lock = merge_lock
         self.convert_tool = convert_tool

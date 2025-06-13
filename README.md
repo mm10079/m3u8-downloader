@@ -37,7 +37,7 @@ pip install -r requirements.txt
 基本命令如下：
 
 ```bash
-python main.py -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
+python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
 ```
 
 ## 🔧 使用方式

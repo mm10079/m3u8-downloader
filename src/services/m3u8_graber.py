@@ -5,7 +5,7 @@ import requests
 from selenium import webdriver
 from collections import OrderedDict
 
-from src.app_types import m3u8_types
+from src.app_types import m3u8
 from src.utils import set_cookies
 
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def is_digit(s):
         return False
     
 # 取得與存檔案網址可組合的基本網址
-def get_patch_url(m3u8_url: str, file_address: str) -> m3u8_types.PatchInfo:
+def get_patch_url(m3u8_url: str, file_address: str) -> m3u8.PatchInfo:
     scheme = m3u8_url.split('://')[0]
     m3u8_paths = m3u8_url.split('://')[1].split('?')[0].split('/')[:-1]
     file_paths = file_address.split('?')[0].split('/')
@@ -34,7 +34,7 @@ def get_patch_url(m3u8_url: str, file_address: str) -> m3u8_types.PatchInfo:
     if file_address[0] == '/':
         base_url = base_url[:-1]
     file_url = base_url + file_address
-    return m3u8_types.PatchInfo(base=base_url, file=file_url)
+    return m3u8.PatchInfo(base=base_url, file=file_url)
 
 def check_url_status(url, headers, session = requests.Session()) -> bool:
     # 檢查網址是否有效
@@ -51,8 +51,8 @@ def check_url_status(url, headers, session = requests.Session()) -> bool:
     
 # 解析區塊
 # 將主播放列表解析為字典
-def process_master_playlist(url: str, content: str) -> m3u8_types.MasterPlaylistInfo:
-    master_playlist_info = m3u8_types.MasterPlaylistInfo(
+def process_master_playlist(url: str, content: str) -> m3u8.MasterPlaylistInfo:
+    master_playlist_info = m3u8.MasterPlaylistInfo(
         name=url.split('?')[0].split('/')[-1],
         url=url,
     )
@@ -60,7 +60,7 @@ def process_master_playlist(url: str, content: str) -> m3u8_types.MasterPlaylist
     lines = content.splitlines()
     index = 0  # 明確記錄插入順序
     for n in range(len(lines)):
-        m3u8 = m3u8_types.MediaPlaylistFileInfo(
+        m3u8_info = m3u8.MediaPlaylistFileInfo(
             index=index,
             quality='',
             media_type='',
@@ -71,18 +71,18 @@ def process_master_playlist(url: str, content: str) -> m3u8_types.MasterPlaylist
             if 'EXT-X-MEDIA' in lines[n]:
                 info = lines[n].replace('#EXT-X-MEDIA:', '').split(',')
                 info = {i.split('=')[0]: i.split('=')[1].strip('"') for i in info}
-                m3u8.quality = info.get('GROUP-ID', '')
-                m3u8.media_type = info.get('TYPE', '')
-                m3u8.filepath = info.get('URI', '')
-                master_playlist_info.m3u8s[index] = m3u8
+                m3u8_info.quality = info.get('GROUP-ID', '')
+                m3u8_info.media_type = info.get('TYPE', '')
+                m3u8_info.filepath = info.get('URI', '')
+                master_playlist_info.m3u8s[index] = m3u8_info
                 index += 1
             elif 'EXT-X-STREAM-INF' in lines[n]:
                 match = re.search(r'BANDWIDTH=(\d+)', lines[n])
-                m3u8.quality = match.group(1) if match else '0'
-                m3u8.media_type = 'STREAM'
+                m3u8_info.quality = match.group(1) if match else '0'
+                m3u8_info.media_type = 'STREAM'
                 if n + 1 < len(lines):
-                    m3u8.filepath = lines[n + 1]
-                master_playlist_info.m3u8s[index] = m3u8
+                    m3u8_info.filepath = lines[n + 1]
+                master_playlist_info.m3u8s[index] = m3u8_info
                 index += 1
             #elif 'EXT-X-VERSION' in lines[n]:
             #    master_playlist_info['EXT-X-VERSION'] = int(lines[n].split(':')[1])
@@ -104,14 +104,14 @@ def process_master_playlist(url: str, content: str) -> m3u8_types.MasterPlaylist
 
     # 重建 m3u8s，並去掉 'order' 欄位
     master_playlist_info.m3u8s = OrderedDict()
-    for i, m3u8 in enumerate(combined):
-        master_playlist_info.m3u8s[i] = m3u8
+    for i, now_m3u8 in enumerate(combined):
+        master_playlist_info.m3u8s[i] = now_m3u8
 
     return master_playlist_info
 
 # 將媒體播放列表解析為字典
 def process_media_playlist(url: str, content: str):
-    media_playlist_info = m3u8_types.MediaPlaylistInfo(
+    media_playlist_info = m3u8.MediaPlaylistInfo(
         name=url.split('?')[0].split('/')[-1],
         url=url,
         play_type='STREAM',
@@ -128,7 +128,7 @@ def process_media_playlist(url: str, content: str):
                 except (IndexError, ValueError):
                     duration = 0.0
                 order_counter += 1
-                file = m3u8_types.MediaFile(
+                file = m3u8.MediaFile(
                     order=order_counter,
                     extinf=duration,
                     path=lines[n+1] if n+1 < len(lines) else '',
@@ -178,12 +178,12 @@ class get_media_m3u8:
         self.master_playlist_content = ''
         self.master_playlist_url = ''
         self.master_patch_url = ''
-        self.master_playlist_info = m3u8_types.MasterPlaylistInfo()
+        self.master_playlist_info = m3u8.MasterPlaylistInfo()
         self.media_playlist_content = ''
         self.old_media_playlist_url = ''
         self.media_playlist_url = ''
         self.media_patch_url = ''
-        self.media_playlist_info = m3u8_types.MediaPlaylistInfo()
+        self.media_playlist_info = m3u8.MediaPlaylistInfo()
         self.session = set_cookies.update_session(self.cookies)
         top_m3u8_content = self.session.get(url, headers=self.headers).text
         if '.m3u8' in top_m3u8_content:
@@ -241,7 +241,7 @@ class get_media_m3u8:
             log.warning("獲取媒體播放清單失敗")
             return ""
 
-    def get_media_patch_url(self, media_playlist_info: m3u8_types.MediaPlaylistInfo) -> str | None:
+    def get_media_patch_url(self, media_playlist_info: m3u8.MediaPlaylistInfo) -> str | None:
         '''對Master Playlist與Media Playlist的網址進行拆解測試，從中取得可以與檔案組合成正確網址的Patch網址'''
         file_url = media_playlist_info.files[0].path
         patch = get_patch_url(self.media_playlist_url, file_url)

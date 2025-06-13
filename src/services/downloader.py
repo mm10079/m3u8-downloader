@@ -11,7 +11,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from src.utils import default_info
-from src.app_types import common_types
+from src.app_types import common
 
 log = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ async def async_download(url: str, filepath: str, session: aiohttp.ClientSession
     return False
 
 
-async def downlaod_attachment(attachments: common_types.AttachmentInfo, output_path: str, referer: str, cookies: dict[str, str] | None) -> None:
+async def downlaod_attachment(attachments: common.AttachmentInfo, output_path: str, referer: str, cookies: dict[str, str] | None) -> None:
     task = []
     headers = {
         'User-Agent': default_info.DEFAULT_USER_AGENT,
