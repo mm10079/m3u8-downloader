@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 
+from typing import List
 from dataclasses import fields, MISSING
 
 from src import __description__
@@ -35,11 +36,11 @@ def parse_args(description="") -> argparse.ArgumentParser:
     )
     for f in fields(params.WebParams):
         arg_type = f.type
-        default = f.default if arg_type != 'list' else f.default_factory
+        default = f.default_factory if f.default is not MISSING and isinstance(f.default, list) else f.default
         nargs = f.metadata.get("nargs", None)
         help_info = f.metadata.get("help", "")
-        arg_name = f"--{f.name.replace('_', '-')}"
-        if arg_type == "bool":
+        arg_name = f"--{f.name.replace('_', '-')}" if f.name != 'url' else f.name
+        if arg_type == bool:
             parser.add_argument(
                 arg_name,
                 action=argparse.BooleanOptionalAction,
@@ -47,7 +48,7 @@ def parse_args(description="") -> argparse.ArgumentParser:
                 default=default
             )
         else:
-            if isinstance(f.default, list) == list:    
+            if arg_type == List[str]:    
                 arg_type = type_map.get('list', str)
             parser.add_argument(
                 arg_name,

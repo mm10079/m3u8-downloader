@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import List
 from dataclasses import dataclass, field
 
 USERAGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36'
@@ -69,7 +70,7 @@ class DefaultParams:
     threads_limit: int = field(
         default= 3,
         metadata={
-            "help": "多線程數量\n最少為3，最多不超過電腦多線程的 3/4",
+            "help": "同步下載m3u8數量\n最少為1，最多不超過電腦多線程的 3/4",
             }
         )
     referer: str = field(
@@ -123,7 +124,7 @@ class WebParams(DefaultParams):
             "help": "下載附件\n評論、貼圖、票券訊息等",
             }
         )
-    skip_urls: list = field(
+    skip_urls: List[str] = field(
         default_factory=list,
         metadata={
             "help": "跳過網址\n自動跳過特定的直播間或m3u8網址",
