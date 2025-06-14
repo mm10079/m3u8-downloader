@@ -61,7 +61,7 @@ def web_graber(config: params.WebParams) -> common.Mission:
         # 下載資訊檢測區塊
         log.info('開始尋找m3u8文件，如果你已到播放間或Space空間但沒檢測到m3u8文件，請手動刷新幾次網頁')
         download_info = None # type: ignore
-        abandoned_m3u8s = set()
+        skip_urls = set(config.skip_urls)
         models = []
         for _, module_name, _ in pkgutil.iter_modules(src.web_modules.__path__):
             if module_name != "nonspecific" and module_name != "__init__":
@@ -71,7 +71,7 @@ def web_graber(config: params.WebParams) -> common.Mission:
             # 檢測網址是否為特定模塊，如有則執行對應模塊
             for model in models:
                 module = importlib.import_module(model)
-                download_info: common.Mission = module.main(base_driver, config, abandoned_m3u8s)
+                download_info: common.Mission = module.main(base_driver, config, skip_urls)
                 if download_info is not None:
                     break
             if download_info is None:

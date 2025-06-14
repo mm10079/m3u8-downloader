@@ -36,7 +36,7 @@ def parse_args(description="") -> argparse.ArgumentParser:
     )
     for f in fields(params.WebParams):
         arg_type = f.type
-        default = f.default_factory if f.default is not MISSING and isinstance(f.default, list) else f.default
+        default = f.default_factory() if f.default_factory is not MISSING else f.default
         nargs = f.metadata.get("nargs", None)
         help_info = f.metadata.get("help", "")
         arg_name = f"--{f.name.replace('_', '-')}" if f.name != 'url' else f.name

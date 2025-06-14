@@ -3,6 +3,7 @@ downloads/
 .pytest_cache/
 data/
 tests/
+tools/
 *.pyc
 .vscode/
 .env
