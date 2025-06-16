@@ -71,10 +71,10 @@ python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
     <td>--tool-path "str"</td><td>FFmpeg路徑</td><td>預設為ffmpeg，exe檔已包裝ffmpeg無須設定</td>
   </tr>
   <tr>
-    <td>--decrypt bool</td><td>解密碎片</td><td>在下載中途同時解密當前已有的碎片</td>
+    <td>--decrypt / --no-decrypt</td><td>解密碎片</td><td>在下載中途同時解密當前已有的碎片</td>
   </tr>
   <tr>
-    <td>--full-download bool</td><td>回追檔案</td><td>下載直播時，嘗試回追已過片段</td>
+    <td>--full-download / --no-full-download</td><td>回追檔案</td><td>下載直播時，嘗試回追已過片段</td>
   </tr>
   <tr>
     <td>--threads-limit int</td><td>多線程數量</td><td>最多同時下載多少m3u8檔案，一般不需要設定</td>
@@ -95,18 +95,15 @@ python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
     <td>--chrome-path "str"</td><td>瀏覽器路徑</td><td>Selenium用，一般不需要更改</td>
   </tr>
   <tr>
-    <td>--headless bool</td><td>無頭模式</td><td>隱藏瀏覽器視窗，通常搭配網站模組使用</td>
+    <td>--headless</td><td>無頭模式</td><td>隱藏瀏覽器視窗，通常搭配網站模組使用</td>
   </tr>
   <tr>
-    <td>--skip-media bool</td><td>跳過下載m3u8</td><td>啟用後不下載m3u8連結</td>
+    <td>--media / --no-media</td><td>跳過下載m3u8</td><td>啟用後不下載m3u8連結</td>
   </tr>
   <tr>
-    <td>--attachment bool</td><td>下載附件</td><td>搭配網站模組使用，下載m3u8之外的附件</td>
+    <td>--attachment / --no-attachment</td><td>下載附件</td><td>搭配網站模組使用，下載m3u8之外的附件</td>
   </tr>
   <tr>
-    <td>--twitter_keywords "[str1,str2,str3...]"</td><td>推特m3u8關鍵字</td><td>用於推特模組使用，自動篩選關鍵字</td>
-  </tr>
-  <tr>
-    <td>--skip_urls "[str1,str2,str3...]"</td><td>跳過網址</td><td>輸入欲跳過的m3u8網址</td>
+    <td>--skip_urls "str1","str2","str3"</td><td>跳過網址</td><td>輸入欲跳過的m3u8網址</td>
   </tr>
 </table>

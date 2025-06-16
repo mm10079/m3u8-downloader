@@ -12,7 +12,7 @@ def get_resource_path():
             base_path = getattr(sys, '_MEIPASS', os.getcwd())
         else:
             base_path = os.getcwd()
-        return os.path.join(base_path, 'tools', 'ffmpeg.exe')
+        return os.path.join(base_path, 'src', 'tools', 'ffmpeg.exe')
     else:
         return "ffmpeg"
 
