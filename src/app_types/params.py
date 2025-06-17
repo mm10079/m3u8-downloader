@@ -37,7 +37,7 @@ class DefaultParams:
             "help": "下載畫質\n僅用於自動化下載",
             }
         )
-    output_path: str = field(
+    output: str = field(
         default= 'downloads',
         metadata={
             "help": "輸出路徑",
@@ -49,7 +49,7 @@ class DefaultParams:
             "help": "Cookies路徑\n僅用於直接下載m3u8時，若爬蟲網站則會自動生成，可輸入路徑或Cookies字串",
             }
         )
-    tool_path: str = field(
+    tool: str = field(
         default_factory= get_resource_path,
         metadata={
             "help": "合併用工具路徑",
@@ -67,7 +67,7 @@ class DefaultParams:
     #        "help": "完全下載\n於直播時嘗試回推存檔值",
     #        }
     #    )
-    threads_limit: int = field(
+    threads: int = field(
         default= 3,
         metadata={
             "help": "同步下載m3u8數量\n最少為1，最多不超過電腦多線程的 3/4",

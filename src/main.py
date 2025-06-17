@@ -80,17 +80,17 @@ def web_graber(config: params.WebParams) -> common.Mission:
 def download(config: params.WebParams, mission: common.Mission) -> None:
     # 下載m3u8文件
     if config.media:
-        with ThreadPoolExecutor(max_workers=config.threads_limit) as executor:
+        with ThreadPoolExecutor(max_workers=config.threads) as executor:
             threadPool = []
             lock = threading.Lock()
             name_length = max(len(m3u8_info.filename) for m3u8_info in mission.m3u8s)
             for m3u8_info in mission.m3u8s:
                 m3u8_info.order = config.quantity
-                output_path = os.path.join(config.output_path, m3u8_info.folder)
+                output_path = os.path.join(config.output, m3u8_info.folder)
                 dl_mission = m3u8_downloader.m3u8_downloader(
                     m3u8_info= m3u8_info,
                     merge_lock= lock,
-                    convert_tool= config.tool_path,
+                    convert_tool= config.tool,
                     output_path= output_path,
                     decrypt= config.decrypt,
                     full_download=getattr(config, 'full_download', False),
@@ -120,7 +120,7 @@ def download(config: params.WebParams, mission: common.Mission) -> None:
         cookies = set_cookies.load_cookies_to_dict(source_cookies)
         task = downloader.downlaod_attachment(
             mission.attachments,
-            config.output_path,
+            config.output,
             source_cookies.current_url if isinstance(source_cookies, driver_tools.webdriver.Chrome) else config.url,
             cookies
             )
