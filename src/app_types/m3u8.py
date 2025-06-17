@@ -48,7 +48,6 @@ class M3U8Info:
     referer: str = ""
     user_agent: str | None = None
     cookies: str | webdriver.Chrome | dict | None = None
-    full_download: bool = False
 
 @dataclass
 class PatchInfo:

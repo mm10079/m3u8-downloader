@@ -288,13 +288,13 @@ class m3u8_downloader:
         '''監控m3u8檔案更新直到直播間關閉或是下載完成'''
         retries, faided_times = 0, 0
         while retries < 10 or self.tasks:
-            if not self.key:
-                self.m3u8_graber.update_master_playlist()
             m3u8_status = self.m3u8_graber.update_media_playlist()
             if self.stop_flag.is_set() and retries < 10:
                 log.warning(f"收到停止訊號，等待當前下載任務完成。")
                 retries = 10
             elif not self.stop_flag.is_set():
+                if not self.key and not self.m3u8_graber.media_playlist_info.map_url:
+                    self.m3u8_graber.update_master_playlist()
                 end_number = self.get_last_file_number()
                 if end_number not in self.files_status.keys():
                     for file in self.m3u8_graber.media_playlist_info.files:
@@ -304,7 +304,7 @@ class m3u8_downloader:
                     retries, faided_times = 0, 0
                 else:
                     retries += 1
-                    #log.info(f"未監控到新的檔案")
+                    log.info(f"未監控到新的檔案")
             if not m3u8_status:
                 faided_times += 1
                 if faided_times > 10:
@@ -475,16 +475,20 @@ class m3u8_downloader:
 
         # 監控m3u8檔案更新直到直播間關閉或是下載完成
         log.info(f"開始下載媒體檔案")
-        self.format_info = get_format_file_url(
-            self.m3u8_graber.media_patch_url,
-            self.m3u8_graber.media_playlist_info.files[0].path,
-            self.m3u8_graber.media_playlist_info.files[1].path
-            )
-        if self.format_info.url and self.full_download:
-            log.info(f"存在關聯性檔案連結，使用格式化下載方式下載")
-            await self.format_downloader()
+        if self.full_download:
+            self.format_info = get_format_file_url(
+                self.m3u8_graber.media_patch_url,
+                self.m3u8_graber.media_playlist_info.files[0].path,
+                self.m3u8_graber.media_playlist_info.files[1].path
+                )
+            if self.format_info.url and self.full_download:
+                log.info(f"存在關聯性檔案連結，使用格式化下載方式下載")
+                await self.format_downloader()
+            else:
+                log.info(f"不存在關聯性檔案連結，使用串流下載方式下載")
+                await self.normal_downloader()
         else:
-            log.info(f"不存在關聯性檔案連結，使用串流下載方式下載")
+            log.info(f"使用串流下載方式下載")
             await self.normal_downloader()
 
         self.create_m3u8_file(os.path.join(self.fragment_folder, "media.m3u8"))

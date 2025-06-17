@@ -61,12 +61,12 @@ class DefaultParams:
             "help": "邊下載中解密",
             }
         )
-    full_download: bool = field(
-        default= True,
-        metadata={
-            "help": "完全下載\n於直播時嘗試回推存檔值",
-            }
-        )
+    #full_download: bool = field(
+    #    default= True,
+    #    metadata={
+    #        "help": "完全下載\n於直播時嘗試回推存檔值",
+    #        }
+    #    )
     threads_limit: int = field(
         default= 3,
         metadata={

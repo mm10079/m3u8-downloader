@@ -46,7 +46,6 @@ def web_graber(config: params.WebParams) -> common.Mission:
             referer=referer,
             user_agent=config.user_agent,
             cookies=config.cookies,
-            full_download=config.full_download,
         )
         download_info = common.Mission([m3u8_info], None)
     else:
@@ -94,7 +93,7 @@ def download(config: params.WebParams, mission: common.Mission) -> None:
                     convert_tool= config.tool_path,
                     output_path= output_path,
                     decrypt= config.decrypt,
-                    full_download=config.full_download,
+                    full_download=getattr(config, 'full_download', False),
                     stop_flag=stop_flag
                 )
                 thread = executor.submit(dl_mission.main, name_length)
