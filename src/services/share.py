@@ -3,6 +3,8 @@ from socketserver import ThreadingMixIn
 import threading
 import socket
 
+httpd_server = None
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """允許多發連線的 HTTPServer"""
     daemon_threads = True  # 確保線程在主程序退出時終止
@@ -17,16 +19,17 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         SimpleHTTPRequestHandler.end_headers(self)
 
 def run(server_class=ThreadedHTTPServer, handler_class=MyHTTPRequestHandler, directory='.'):
-    global httpd
+    global httpd_server
     server_address = ('', port)
-    httpd = server_class(server_address, lambda *args, **kwargs: handler_class(*args, directory=directory, **kwargs))
+    httpd_server = server_class(server_address, lambda *args, **kwargs: handler_class(*args, directory=directory, **kwargs))
     print(f"Server started on port {port}, serving directory: {directory}")
-    httpd.serve_forever()
+    httpd_server.serve_forever()
 
 def stop():
     # 關閉伺服器
-    httpd.shutdown()
-    httpd.server_close()
+    if httpd_server:
+        httpd_server.shutdown()
+        httpd_server.server_close()
 
 def get_local_ip() -> str | None:
     try:

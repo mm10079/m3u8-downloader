@@ -38,7 +38,10 @@ def get_format_text(filepath: str, replacement: str) -> common.FormatText:
     result = common.FormatText()
     if matches is not None:
         replaced_string = re.sub(rf'{re.escape(matches)}(?=\D*$)', replacement, filename, count=1)
-        format_path = '/'.join(filepath_info[:-1]) + f'/{replaced_string}{ext}'
+        if '/' == replaced_string[0]:
+            format_path = '/'.join(filepath_info[:-1]) + f'{replaced_string}{ext}'
+        else:
+            format_path = '/'.join(filepath_info[:-1]) + f'/{replaced_string}{ext}'
         if '0' == matches[0] and len(matches) > 1:
             result.fill = len(matches)
             result.text = format_path
@@ -124,8 +127,11 @@ def get_format_file_url(base_url:str, first_file: str, second_file: str) -> comm
     if file_format_info.text != second_file_name:
         log.error(f'無法回朔檔案命名方式，名稱1：\"{file_format_info.text}\" | 名稱2：\"{second_file_name}\"')
         return result
-    
-    format_url = base_url + f'{file_format_info.text}'
+    if base_url[-1] == '/' and file_format_info.text[0] == '/':
+        # 如果base_url以/結尾，則不需要再加/
+        format_url = base_url + file_format_info.text[1:]
+    else:
+        format_url = base_url + f'{file_format_info.text}'
     if '?' in first_file:
         format_url += '?'
         arg1 = first_file.split('?')[-1].split('&')
@@ -287,12 +293,13 @@ class m3u8_downloader:
     async def normal_downloader(self):
         '''監控m3u8檔案更新直到直播間關閉或是下載完成'''
         retries, faided_times = 0, 0
+        m3u8_status = True
         while retries < 10 or self.tasks:
-            m3u8_status = self.m3u8_graber.update_media_playlist()
             if self.stop_flag.is_set() and retries < 10:
                 log.warning(f"收到停止訊號，等待當前下載任務完成。")
                 retries = 10
             elif not self.stop_flag.is_set():
+                m3u8_status = self.m3u8_graber.update_media_playlist()
                 if not self.key and not self.m3u8_graber.media_playlist_info.map_url:
                     self.m3u8_graber.update_master_playlist()
                 end_number = self.get_last_file_number()
@@ -305,12 +312,12 @@ class m3u8_downloader:
                 else:
                     retries += 1
                     log.info(f"未監控到新的檔案")
-            if not m3u8_status:
-                faided_times += 1
-                if faided_times > 10:
-                    log.critical(f"直播間已關閉，停止所有下載任務。")
-                    await self.stop_all_tasks()
-                    break
+                if not m3u8_status:
+                    faided_times += 1
+                    if faided_times > 10:
+                        log.critical(f"直播間已關閉，停止所有下載任務。")
+                        await self.stop_all_tasks()
+                        break
             await asyncio.sleep(3)
 #########################
     async def add_format_download(self, num:int):
@@ -345,15 +352,16 @@ class m3u8_downloader:
         last_num =  self.get_last_file_number()
         start_number = await FindStartFile(self.format_info.url, self.format_info.fill, session=self.session).main(last_num)
         retries, faided_times = 0, 0
+        m3u8_status = True
         now_amount = 0
         while retries < 10 or self.tasks:
             #if not self.key:
             #    self.m3u8_graber.update_master_playlist()
-            m3u8_status = self.m3u8_graber.update_media_playlist()
             if self.stop_flag.is_set() and retries < 10:
                 log.warning(f"收到停止訊號，等待當前下載任務完成。")
                 retries = 10
             elif not self.stop_flag.is_set():
+                m3u8_status = self.m3u8_graber.update_media_playlist()
                 end_number = self.get_last_file_number()
                 if end_number not in self.files_status.keys():
                     for num in range(start_number, end_number+1):
@@ -366,13 +374,13 @@ class m3u8_downloader:
                 else:
                     retries += 1
                     log.info(f"未監控到新的檔案")
-            if not m3u8_status:
-                faided_times += 1
-                if faided_times > 10:
-                    log.critical(f"直播間已關閉，停止所有下載任務。")
-                    await self.stop_all_tasks()
-                    break
-            start_number = end_number
+                if not m3u8_status:
+                    faided_times += 1
+                    if faided_times > 10:
+                        log.critical(f"直播間已關閉，停止所有下載任務。")
+                        await self.stop_all_tasks()
+                        break
+                start_number = end_number
             await asyncio.sleep(3)
         log.info(f"已結束的碎片下載完成")
 #######################################################################
@@ -491,6 +499,8 @@ class m3u8_downloader:
             log.info(f"使用串流下載方式下載")
             await self.normal_downloader()
 
+        log.info(f"所有媒體檔案下載完成，開始合併媒體檔案")
+        # 創建m3u8文件
         self.create_m3u8_file(os.path.join(self.fragment_folder, "media.m3u8"))
         if self.log_status():
             with self.merge_lock:

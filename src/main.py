@@ -32,6 +32,7 @@ def web_graber(config: params.WebParams) -> common.Mission:
     log.info(f'初始網址：\"{config.url}\"')
 
     if '.m3u8' in config.url:
+        referer = ''
         if config.referer:
             referer = config.referer
         else:

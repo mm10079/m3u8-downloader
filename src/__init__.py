@@ -1,4 +1,4 @@
-__version__ = "2.0.0.5"
+__version__ = "2.0.2.0"
 __author__ = "馬邦德"
 __description__ = f"""
 m3u8下載器 (v{__version__})
