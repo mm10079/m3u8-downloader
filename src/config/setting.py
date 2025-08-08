@@ -59,9 +59,9 @@ def parse_args(description="") -> argparse.ArgumentParser:
             )
     return parser
 
-def get_config() -> params.WebParams:
+def get_config() -> params.AllParams:
     '''取得設定'''
     parser = parse_args(__description__)
     args, unknown_args  = parser.parse_known_args()
-    config = params.WebParams(**vars(args))
+    config = params.AllParams(**vars(args))
     return config

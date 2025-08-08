@@ -62,13 +62,13 @@ python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
     <td>--quantity int</td><td>畫質排序數值</td><td>0為最高畫質，遞增而畫質降低</td>
   </tr>
   <tr>
-    <td>--output-path "str"</td><td>存檔路徑</td><td>預設為downloads</td>
+    <td>--output "str"</td><td>存檔路徑</td><td>預設為downloads</td>
   </tr>
   <tr>
-    <td>--cookies_path "str"</td><td>cookies路徑</td><td>直接下載m3u8時使用，若從瀏覽器捕捉m3u8，則自動從瀏覽器取得</td>
+    <td>--cookies "str"</td><td>cookies路徑</td><td>直接下載m3u8時使用，若從瀏覽器捕捉m3u8，則自動從瀏覽器取得</td>
   </tr>
   <tr>
-    <td>--tool-path "str"</td><td>FFmpeg路徑</td><td>預設為ffmpeg，exe檔已包裝ffmpeg無須設定</td>
+    <td>--tool "str"</td><td>FFmpeg路徑</td><td>預設為ffmpeg，exe檔已包裝ffmpeg無須設定</td>
   </tr>
   <tr>
     <td>--decrypt / --no-decrypt</td><td>解密碎片</td><td>在下載中途同時解密當前已有的碎片</td>
@@ -77,7 +77,7 @@ python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
     <td>--full-download / --no-full-download</td><td>回追檔案</td><td>下載直播時，嘗試回追已過片段</td>
   </tr>
   <tr>
-    <td>--threads-limit int</td><td>多線程數量</td><td>最多同時下載多少m3u8檔案，一般不需要設定</td>
+    <td>--threads int</td><td>多線程數量</td><td>最多同時下載多少m3u8檔案，一般不需要設定</td>
   </tr>
   <tr>
     <td>--referer "str"</td><td>請求網址</td><td>直接下載m3u8時使用</td>
@@ -104,6 +104,6 @@ python -m src.main -u <M3U8_URL | WEB_URL> -o <OUTPUT_FILENAME>
     <td>--attachment / --no-attachment</td><td>下載附件</td><td>搭配網站模組使用，下載m3u8之外的附件</td>
   </tr>
   <tr>
-    <td>--skip_urls "str1","str2","str3"</td><td>跳過網址</td><td>輸入欲跳過的m3u8網址</td>
+    <td>--skip-urls "str1","str2","str3"</td><td>跳過網址</td><td>輸入欲跳過的m3u8網址</td>
   </tr>
 </table>

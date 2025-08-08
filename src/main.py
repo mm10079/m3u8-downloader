@@ -10,7 +10,7 @@ import importlib
 from concurrent.futures import ThreadPoolExecutor
 
 from src.app_types import params
-from src.utils import set_cookies, default_info
+from src.utils import set_cookies, default_info, path
 from src.config import logger, setting
 from src.services import downloader, driver_tools, m3u8_downloader
 from src.app_types import common
@@ -27,11 +27,12 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-def web_graber(config: params.WebParams) -> common.Mission:
+def web_graber(config: params.AllParams) -> common.Mission:
     # 初始化網頁解析器
     log.info(f'初始網址：\"{config.url}\"')
 
     if '.m3u8' in config.url:
+        config.title = path.sanitize_windows_path(config.title)
         referer = ''
         if config.referer:
             referer = config.referer
@@ -78,7 +79,7 @@ def web_graber(config: params.WebParams) -> common.Mission:
                 time.sleep(0.8)
     return download_info
 
-def download(config: params.WebParams, mission: common.Mission) -> None:
+def download(config: params.AllParams, mission: common.Mission) -> None:
     # 下載m3u8文件
     if config.media:
         with ThreadPoolExecutor(max_workers=config.threads) as executor:
@@ -95,6 +96,7 @@ def download(config: params.WebParams, mission: common.Mission) -> None:
                     output_path= output_path,
                     decrypt= config.decrypt,
                     full_download=getattr(config, 'full_download', False),
+                    merge = config.merge,
                     stop_flag=stop_flag
                 )
                 thread = executor.submit(dl_mission.main, name_length)

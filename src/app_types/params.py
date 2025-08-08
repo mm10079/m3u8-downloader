@@ -31,12 +31,6 @@ class DefaultParams:
             "help": "標題名稱\n如果網站有爬取到標題，則優先使用網站標題",
             }
         )
-    quantity: int = field(
-        default= 0,
-        metadata={
-            "help": "下載畫質\n僅用於自動化下載",
-            }
-        )
     output: str = field(
         default= 'downloads',
         metadata={
@@ -55,18 +49,6 @@ class DefaultParams:
             "help": "合併用工具路徑",
             }
         )
-    decrypt: bool = field(
-        default= False,
-        metadata={
-            "help": "邊下載中解密",
-            }
-        )
-    #full_download: bool = field(
-    #    default= True,
-    #    metadata={
-    #        "help": "完全下載\n於直播時嘗試回推存檔值",
-    #        }
-    #    )
     threads: int = field(
         default= 3,
         metadata={
@@ -87,7 +69,7 @@ class DefaultParams:
         )
 
 @dataclass
-class WebParams(DefaultParams):
+class WebParams():
     account: str = field(
         default="",
         metadata={
@@ -130,3 +112,42 @@ class WebParams(DefaultParams):
             "help": "跳過網址\n自動跳過特定的直播間或m3u8網址",
             }
         )
+
+@dataclass
+class DownloadParams():
+    """M3U8參數類別"""
+    full_download: bool = field(
+        default= True,
+        metadata={
+            "help": "完全下載\n於直播時嘗試回推存檔值",
+            }
+        )
+    guess_distance: int = field(
+        default= 10000,
+        metadata={
+            "help": "追朔已結束的碎片\n如果直播間已結束，則會自動追朔已結束的碎片",
+            }
+        )
+    quantity: int = field(
+        default= 0,
+        metadata={
+            "help": "下載畫質\n僅用於自動化下載",
+            }
+        )
+    decrypt: bool = field(
+        default= False,
+        metadata={
+            "help": "邊下載中解密",
+            }
+        )
+    merge: bool = field(
+        default= True,
+        metadata={
+            "help": "下載完成後合併媒體",
+            }
+        )
+
+@dataclass
+class AllParams(WebParams, DefaultParams, DownloadParams):
+    """綜合所有參數的類別"""
+    pass

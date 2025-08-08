@@ -11,7 +11,7 @@ from selenium import webdriver
 from src.app_types import common
 from src.services import share, decrypt, downloader, m3u8_graber
 from src.config import logger
-from src.utils import set_cookies, default_info
+from src.utils import set_cookies, default_info, guess
 
 log = logging.getLogger(name=__name__)
 
@@ -27,7 +27,7 @@ def get_last_number(string: str) -> str|None:
         return last_number
     return None
 
-def get_format_text(filepath: str, replacement: str) -> common.FormatText:
+def get_fileinfo(filepath: str, replacement: str) -> common.FileInfo|None:
     """ return (fill, format_string) """
     # 獲取最後一個數字組並進行替換，需要避免抓取到mp4之類的檔名
     filepath_info = filepath.split('?')[0].split('/')
@@ -35,7 +35,6 @@ def get_format_text(filepath: str, replacement: str) -> common.FormatText:
     ext = os.path.splitext(filename)[1]
     filename = filename[:filename.rfind(ext)]
     matches = get_last_number(filename)
-    result = common.FormatText()
     if matches is not None:
         replaced_string = re.sub(rf'{re.escape(matches)}(?=\D*$)', replacement, filename, count=1)
         if '/' == replaced_string[0]:
@@ -43,10 +42,17 @@ def get_format_text(filepath: str, replacement: str) -> common.FormatText:
         else:
             format_path = '/'.join(filepath_info[:-1]) + f'/{replaced_string}{ext}'
         if '0' == matches[0] and len(matches) > 1:
-            result.fill = len(matches)
-            result.text = format_path
-        result.text = format_path
-    return result
+            fill = len(matches)
+        else:
+            fill = 0
+        result = common.FileInfo(
+            fill=fill,
+            format_path=format_path,
+            number=int(matches)
+        )
+        return result
+    else:
+        return None
 
 
 ################################################################
@@ -111,27 +117,38 @@ class FindStartFile:
         raise ValueError("無法找到有效的檔案網址")
 
 # 取得格式化連結
-def get_format_file_url(base_url:str, first_file: str, second_file: str) -> common.FormatInfo:
+def get_formatinfo(base_url:str, first_file: str, second_file: str) -> common.FormatInfo|None:
     """
     base_url: 基本網址 配合前面m3u8的media_patch_url
+    file為完整路徑(包含參數與資料夾路徑)
     找出兩個檔案中參數不同的部分，替換成{num}
     """
-    result = common.FormatInfo()
     # 分離副檔名，副檔名包含數字導致錯誤替換
-    file_format_info = get_format_text(first_file, '{num}')
-    if not file_format_info.text:
+    first_fileinfo = get_fileinfo(first_file, '{num}')
+    if not first_fileinfo:
         log.error(f'無法解析的檔案名稱:{first_file}')
-        return result
+        return None
 
-    second_file_name = get_format_text(second_file, '{num}').text
-    if file_format_info.text != second_file_name:
-        log.error(f'無法回朔檔案命名方式，名稱1：\"{file_format_info.text}\" | 名稱2：\"{second_file_name}\"')
-        return result
-    if base_url[-1] == '/' and file_format_info.text[0] == '/':
-        # 如果base_url以/結尾，則不需要再加/
-        format_url = base_url + file_format_info.text[1:]
+    second_fileinfo = get_fileinfo(second_file, '{num}')
+    if not second_fileinfo:
+        log.error(f'無法解析的檔案名稱:{second_file}')
+        return None
+    
+    # 檢查兩個檔案的格式化路徑是否一致
+    if first_fileinfo.format_path != second_fileinfo.format_path:
+        log.error(f'無法回朔檔案命名方式，名稱1：\"{first_fileinfo.format_path}\" | 名稱2：\"{second_fileinfo.format_path}\"')
+        return None
+    
+    # 組成格式化連結
+    if '/' == base_url[-1]:
+        base_url = base_url[:-1]
+    if '/' == first_fileinfo.format_path[0]:
+        format_path = first_fileinfo.format_path[1:]
     else:
-        format_url = base_url + f'{file_format_info.text}'
+        format_path = first_fileinfo.format_path
+    format_url = base_url + '/' + format_path
+
+    # 檢查參數是否一致
     if '?' in first_file:
         format_url += '?'
         arg1 = first_file.split('?')[-1].split('&')
@@ -144,8 +161,13 @@ def get_format_file_url(base_url:str, first_file: str, second_file: str) -> comm
                 format_url += arg1[n] + '&'
         if format_url[-1] == '&':
             format_url = format_url[:-1]
-    log.info(f'取得格式化連結：{format_url}')
-    return common.FormatInfo(url=format_url, fill=file_format_info.fill)
+
+    space = abs(second_fileinfo.number - first_fileinfo.number)
+    log.debug("解析格式化資訊")
+    log.debug(f"格式化網址：{format_url}")
+    log.debug(f"數值位數：{first_fileinfo.fill}")
+    log.debug(f"檔案間距：{space}")
+    return common.FormatInfo(url=format_url, fill=first_fileinfo.fill, space=space)
 
 
 ################################################################
@@ -159,20 +181,24 @@ def convert_m3u8_to_media(m3u8_url, output_path, tool):
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=True) as process:
         if process.stdout is not None:
             for line in process.stdout:
-                print(line.strip())
+                if 'configuration:' in line:
+                    continue  # 忽略ffmpeg的配置輸出
+                print(line.strip(), end='\r')
+            log.debug(f"顯示ffmpeg輸出：\n{process.stdout.read()}")
         else:
             log.error("ffmpeg無法獲取輸出")
 
 ################################################################
 # 下載區塊
 class m3u8_downloader:
-    def __init__(self, stop_flag: threading.Event, m3u8_info: common.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False):
+    def __init__(self, stop_flag: threading.Event, m3u8_info: common.M3U8Info, merge_lock: threading.Lock, convert_tool="ffmpeg.exe", output_path="output", decrypt=False, full_download: bool= False, merge: bool = True):
         self.m3u8_info = m3u8_info
         self.merge_lock = merge_lock
         self.convert_tool = convert_tool
         self.output_path = output_path
         self.decrypt = decrypt
         self.full_download = full_download
+        self.merge = merge
         self.stop_flag = stop_flag
         
         self.key = None
@@ -347,13 +373,48 @@ class m3u8_downloader:
             log.critical(f"序號：{num},下載錯誤：{url}")
             dl_info["status"] = "Failed"
 
+    #async def format_downloader(self):
+    #    """可用格式化下載方式下載"""
+    #    last_num =  self.get_last_file_number()
+    #    start_number = await FindStartFile(self.format_info.url, self.format_info.fill, session=self.session).main(last_num)
+    #    retries, faided_times = 0, 0
+    #    m3u8_status = True
+    #    now_amount = 0
+    #    while retries < 10 or self.tasks:
+    #        #if not self.key:
+    #        #    self.m3u8_graber.update_master_playlist()
+    #        if self.stop_flag.is_set() and retries < 10:
+    #            log.warning(f"收到停止訊號，等待當前下載任務完成。")
+    #            retries = 10
+    #        elif not self.stop_flag.is_set():
+    #            m3u8_status = self.m3u8_graber.update_media_playlist()
+    #            end_number = self.get_last_file_number()
+    #            if end_number not in self.files_status.keys():
+    #                for num in range(start_number, end_number+1):
+    #                    task = self.loop.create_task(self.add_format_download(num))
+    #                    self.tasks.add(task)
+    #                    task.add_done_callback(lambda t: self.tasks.discard(t))
+    #                log.info(f"添加下載範圍，序號：{start_number} - {end_number}，共 {end_number-now_amount+1}個檔案")
+    #                now_amount = end_number
+    #                retries, faided_times = 0, 0
+    #            else:
+    #                retries += 1
+    #                log.info(f"未監控到新的檔案")
+    #            if not m3u8_status:
+    #                faided_times += 1
+    #                if faided_times > 10:
+    #                    log.critical(f"直播間已關閉，停止所有下載任務。")
+    #                    await self.stop_all_tasks()
+    #                    break
+    #            start_number = end_number
+    #        await asyncio.sleep(3)
+    #    log.info(f"已結束的碎片下載完成")
+
     async def format_downloader(self):
         """可用格式化下載方式下載"""
-        last_num =  self.get_last_file_number()
-        start_number = await FindStartFile(self.format_info.url, self.format_info.fill, session=self.session).main(last_num)
+        finder = guess.Finder(self.format_info, session=self.session)
         retries, faided_times = 0, 0
         m3u8_status = True
-        now_amount = 0
         while retries < 10 or self.tasks:
             #if not self.key:
             #    self.m3u8_graber.update_master_playlist()
@@ -362,14 +423,13 @@ class m3u8_downloader:
                 retries = 10
             elif not self.stop_flag.is_set():
                 m3u8_status = self.m3u8_graber.update_media_playlist()
-                end_number = self.get_last_file_number()
-                if end_number not in self.files_status.keys():
-                    for num in range(start_number, end_number+1):
+                valid_segments = await finder.main(self.get_last_file_number())
+                if valid_segments:
+                    for num in valid_segments:
                         task = self.loop.create_task(self.add_format_download(num))
                         self.tasks.add(task)
                         task.add_done_callback(lambda t: self.tasks.discard(t))
-                    log.info(f"添加下載範圍，序號：{start_number} - {end_number}，共 {end_number-now_amount+1}個檔案")
-                    now_amount = end_number
+                    log.info(f"添加下載範圍，序號：{valid_segments[0]} - {valid_segments[-1]}，共 {len(valid_segments)}個檔案")
                     retries, faided_times = 0, 0
                 else:
                     retries += 1
@@ -380,7 +440,6 @@ class m3u8_downloader:
                         log.critical(f"直播間已關閉，停止所有下載任務。")
                         await self.stop_all_tasks()
                         break
-                start_number = end_number
             await asyncio.sleep(3)
         log.info(f"已結束的碎片下載完成")
 #######################################################################
@@ -484,13 +543,14 @@ class m3u8_downloader:
         # 監控m3u8檔案更新直到直播間關閉或是下載完成
         log.info(f"開始下載媒體檔案")
         if self.full_download:
-            self.format_info = get_format_file_url(
+            format_info = get_formatinfo(
                 self.m3u8_graber.media_patch_url,
                 self.m3u8_graber.media_playlist_info.files[0].path,
                 self.m3u8_graber.media_playlist_info.files[1].path
                 )
-            if self.format_info.url and self.full_download:
+            if format_info:
                 log.info(f"存在關聯性檔案連結，使用格式化下載方式下載")
+                self.format_info = format_info
                 await self.format_downloader()
             else:
                 log.info(f"不存在關聯性檔案連結，使用串流下載方式下載")
@@ -503,8 +563,12 @@ class m3u8_downloader:
         # 創建m3u8文件
         self.create_m3u8_file(os.path.join(self.fragment_folder, "media.m3u8"))
         if self.log_status():
-            with self.merge_lock:
-                self.merge_media()
+            if self.merge:
+                with self.merge_lock:
+                    self.merge_media()
+                log.info(f"媒體檔案合併完成，儲存於：{self.output_path}")
+            else:
+                log.info(f"未啟用媒體檔案合併，儲存於：{self.output_path}")
         else:
             log.critical(f'存在下載失敗的檔案，請手動進行合成或是重新下載失敗的檔案')
             for name, info in self.files_status.items():

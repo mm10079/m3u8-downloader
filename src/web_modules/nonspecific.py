@@ -9,7 +9,7 @@ from src.utils import default_info, path
 log = logging.getLogger(__name__)
 
 
-def main(driver: webdriver.Chrome, config: params.WebParams, abandoned_m3u8s: set) -> common.Mission | None:
+def main(driver: webdriver.Chrome, config: params.AllParams, abandoned_m3u8s: set) -> common.Mission | None:
     # 沒有模塊則採用隨時檢測m3u8文件
     m3u8s = []
     for m3u8_url in driver_tools.get_m3u8_link(driver, abandoned_m3u8s):
@@ -28,7 +28,6 @@ def main(driver: webdriver.Chrome, config: params.WebParams, abandoned_m3u8s: se
                 referer=driver.current_url,
                 user_agent=config.user_agent,
                 cookies=driver,
-                full_download=config.full_download,
             )
             m3u8s.append(m3u8_info)
         else:

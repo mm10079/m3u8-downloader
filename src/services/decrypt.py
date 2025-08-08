@@ -67,7 +67,7 @@ def ts_with_key_file(ts_path, decrypted_path, key, iv=None):
         encrypted_size = os.path.getsize(ts_path)
         
         if decrypted_size != encrypted_size:
-            log.warning(f"解密後的文件大小 ({decrypted_size} bytes) 與原始文件大小 ({encrypted_size} bytes) 不一致，文件已保存到: {decrypted_path}")
+            #log.warning(f"解密後的文件大小 ({decrypted_size} bytes) 與原始文件大小 ({encrypted_size} bytes) 不一致，文件已保存到: {decrypted_path}")
             return False
         
         # 檢查解密後文件的前 8 字節
